@@ -43,12 +43,12 @@ export default function App() {
         >
           <BottomNavigationAction label="Home" value="/" icon={<HomeIcon />} />
           <BottomNavigationAction
-            label="Profile"
+            label="Trading Song"
             value="/tredings"
             icon={<AudiotrackIcon />}
           />
           <BottomNavigationAction
-            label="Trading Song"
+            label="Profile"
             value="/profile"
             icon={<PersonIcon />}
           />

@@ -12,7 +12,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import { useTheme } from "@mui/material/styles";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import MostPlayedSongs from "./MostPlayedSongs";
 
 const Home = () => {
   const theme = useTheme();
@@ -64,7 +63,6 @@ const Home = () => {
         )}`
       );
 
-      console.log(res.data, "response....");
       setSongs(res.data?.search_results || []);
     } catch (err) {
       console.error("Search failed:", err);
@@ -86,6 +84,8 @@ const Home = () => {
       );
 
       const url = res.data.audioUrl;
+
+      console.log(res.data, "url", url);
       if (url) {
         setAudioUrl(url);
         setCurrentSongTitle(title);
@@ -125,6 +125,22 @@ const Home = () => {
       }
     }
   };
+
+  // Auto-play audio when audioUrl changes
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            // Automatic playback started
+          })
+          .catch((error) => {
+            console.error("Audio play error:", error);
+          });
+      }
+    }
+  }, [audioUrl]);
 
   return (
     <Box
@@ -180,41 +196,40 @@ const Home = () => {
 
         {/* Most Played */}
         <Box mt={4}>
-          {/* <Typography variant="h6" mb={2}>
+          <Typography variant="h6" mb={2}>
             Most Played
-          </Typography> */}
+          </Typography>
 
           {mostPlayed.length === 0 ? (
             <Typography textAlign="center" color="text.secondary">
               No most played songs yet. Play a song to see here.
             </Typography>
           ) : (
-            <MostPlayedSongs />
-            // mostPlayed.map((song, index) => (
-            //   <Card
-            //     key={`most-${index}`}
-            //     sx={{
-            //       display: "flex",
-            //       mb: 2,
-            //       cursor: "pointer",
-            //       borderRadius: 2,
-            //       boxShadow: 2,
-            //     }}
-            //     onClick={() => handleSongClick(song.videoId, song.title)}
-            //   >
-            //     <CardMedia
-            //       component="img"
-            //       image={song.thumbnail}
-            //       alt={song.title}
-            //       sx={{ width: 100, height: 100, objectFit: "cover" }}
-            //     />
-            //     <CardContent>
-            //       <Typography variant="subtitle1" fontWeight={600}>
-            //         {song.title}
-            //       </Typography>
-            //     </CardContent>
-            //   </Card>
-            // ))
+            mostPlayed.map((song, index) => (
+              <Card
+                key={`most-${index}`}
+                sx={{
+                  display: "flex",
+                  mb: 2,
+                  cursor: "pointer",
+                  borderRadius: 2,
+                  boxShadow: 2,
+                }}
+                onClick={() => handleSongClick(song.videoId, song.title)}
+              >
+                <CardMedia
+                  component="img"
+                  image={song.thumbnail}
+                  alt={song.title}
+                  sx={{ width: 100, height: 100, objectFit: "cover" }}
+                />
+                <CardContent>
+                  <Typography variant="subtitle1" fontWeight={600}>
+                    {song.title}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))
           )}
         </Box>
 

@@ -7,7 +7,6 @@ import {
   CardMedia,
   IconButton,
   Button,
-  Slider,
   Stack,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -51,11 +50,14 @@ const MusicApp = () => {
   const [activePlaylist, setActivePlaylist] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentSongIndex, setCurrentSongIndex] = useState<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [shuffle, setShuffle] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const fetchSongs = (playlistKey: string) => {
     setLoading(true);
@@ -80,9 +82,34 @@ const MusicApp = () => {
       .finally(() => setLoading(false));
   };
 
-  const handlePlay = (index: number) => {
-    setCurrentSongIndex(index);
-    setIsPlaying(true);
+  // NEW: Fetch actual audio URL for the selected song and play it
+  const handlePlay = async (index: number) => {
+    setAudioError(null);
+    setLoadingAudio(true);
+    try {
+      const videoId = songs[index].videoId;
+      const res = await axios.get(
+        `https://music-lib-s8zi.onrender.com/get_audio?videoId=${videoId}`
+      );
+      const audioUrl = res.data?.audioUrl;
+      if (!audioUrl) throw new Error("Audio URL not found");
+
+      // Update the song audioUrl in state so <audio> plays correct URL
+      setSongs((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], audioUrl };
+        return updated;
+      });
+
+      setCurrentSongIndex(index);
+      setIsPlaying(true);
+    } catch (error) {
+      console.error("Failed to load audio", error);
+      setAudioError("Failed to load audio. Please try again.");
+      setIsPlaying(false);
+    } finally {
+      setLoadingAudio(false);
+    }
   };
 
   useEffect(() => {
@@ -210,6 +237,7 @@ const MusicApp = () => {
               setCurrentSongIndex(null);
               setIsPlaying(false);
               setProgress(0);
+              setAudioError(null);
             }}
             sx={{ mb: 2 }}
           >
@@ -225,6 +253,12 @@ const MusicApp = () => {
       {loading && (
         <Box mt={4} display="flex" justifyContent="center">
           Loading...
+        </Box>
+      )}
+
+      {audioError && (
+        <Box mt={2} color="error.main" textAlign="center">
+          {audioError}
         </Box>
       )}
 
@@ -248,252 +282,197 @@ const MusicApp = () => {
                 gap: 1,
                 borderRadius: 2,
                 overflow: "hidden",
-                cursor: "pointer",
+                cursor: loadingAudio ? "wait" : "pointer",
                 boxShadow: 3,
                 transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                "&:hover": { transform: "scale(1.05)", boxShadow: 6 },
                 bgcolor:
                   currentSongIndex === idx
                     ? "primary.light"
                     : "background.paper",
-                "&:hover": {
-                  transform: "scale(1.03)",
-                  boxShadow: 6,
-                },
-                height: { xs: 100, sm: "auto" },
               }}
+              aria-current={currentSongIndex === idx ? "true" : undefined}
+              tabIndex={0}
+              role="button"
             >
               <CardMedia
                 component="img"
                 image={song.thumbnail}
                 alt={song.title}
                 sx={{
-                  width: { xs: 100, sm: "100%" },
-                  height: { xs: "100%", sm: 160 },
+                  width: { xs: 120, sm: "100%" },
+                  height: 120,
                   objectFit: "cover",
-                  flexShrink: 0,
-                  borderRadius: { xs: "8px 0 0 8px", sm: "8px 8px 0 0" },
+                  borderRadius: 2,
                 }}
               />
               <CardContent
                 sx={{
-                  flex: 1,
+                  flex: "1 1 auto",
+                  px: 1.5,
                   py: 1,
-                  px: 2,
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
                 }}
               >
                 <Typography
-                  variant="subtitle1"
-                  fontWeight={600}
-                  gutterBottom
+                  variant="body1"
+                  fontWeight="bold"
                   noWrap
+                  title={song.title}
                 >
                   {song.title}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" noWrap>
+                <Typography variant="body2" color="text.secondary" noWrap>
                   Duration: {formatTime(song.duration)}
                 </Typography>
+                <Typography variant="body2" color="text.secondary" noWrap>
+                  Plays: {song.playCount}
+                </Typography>
+                {loadingAudio && currentSongIndex === idx && (
+                  <Typography variant="caption" color="text.secondary" mt={0.5}>
+                    Loading audio...
+                  </Typography>
+                )}
               </CardContent>
             </Card>
           ))}
         </Box>
       )}
 
+      {/* Audio Player Controls */}
       {currentSongIndex !== null && (
         <Box
           sx={{
             position: "fixed",
             bottom: 0,
             left: 0,
-            right: 0,
+            width: "100%",
             bgcolor: "background.paper",
-            borderTop: "1px solid",
-            borderColor: "divider",
-            px: 2,
+            boxShadow: "0 -2px 8px rgba(0,0,0,0.15)",
             py: 1,
-            boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
+            px: 2,
             display: "flex",
             flexDirection: "column",
-            maxWidth: 720,
-            mx: "auto",
-            width: "100%",
-            zIndex: 1300,
+            gap: 1,
+            zIndex: 1500,
           }}
+          aria-label="Audio player controls"
         >
-          {/* Now playing info + controls */}
+          <Typography
+            variant="subtitle1"
+            fontWeight="bold"
+            noWrap
+            title={songs[currentSongIndex].title}
+          >
+            {songs[currentSongIndex].title}
+          </Typography>
+
           <Stack
             direction="row"
-            spacing={1}
             alignItems="center"
-            justifyContent="space-between"
+            justifyContent="center"
+            spacing={1}
           >
-            <Stack direction="row" spacing={1} alignItems="center" flex={1}>
-              <Box
-                component="img"
-                src={songs[currentSongIndex].thumbnail}
-                alt={songs[currentSongIndex].title}
-                sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 1,
-                  objectFit: "cover",
-                  flexShrink: 0,
-                }}
-              />
-              <Typography
-                variant="subtitle1"
-                noWrap
-                sx={{ fontWeight: 600, maxWidth: 200 }}
-                title={songs[currentSongIndex].title}
-              >
-                {songs[currentSongIndex].title}
-              </Typography>
-            </Stack>
+            <IconButton
+              aria-label="Previous"
+              onClick={handlePrev}
+              disabled={currentSongIndex === 0}
+            >
+              <SkipPreviousIcon />
+            </IconButton>
 
-            <Stack direction="row" spacing={0.5} alignItems="center">
-              <IconButton
-                aria-label="previous"
-                onClick={handlePrev}
-                disabled={currentSongIndex === 0}
-              >
-                <SkipPreviousIcon />
-              </IconButton>
+            <IconButton
+              aria-label={isPlaying ? "Pause" : "Play"}
+              onClick={() => setIsPlaying(!isPlaying)}
+            >
+              {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+            </IconButton>
 
-              <IconButton
-                aria-label={isPlaying ? "pause" : "play"}
-                onClick={() => setIsPlaying((v) => !v)}
-                size="large"
-              >
-                {isPlaying ? (
-                  <PauseIcon fontSize="large" />
-                ) : (
-                  <PlayArrowIcon fontSize="large" />
-                )}
-              </IconButton>
+            <IconButton
+              aria-label="Next"
+              onClick={handleNext}
+              disabled={currentSongIndex === songs.length - 1}
+            >
+              <SkipNextIcon />
+            </IconButton>
 
-              <IconButton
-                aria-label="next"
-                onClick={handleNext}
-                disabled={currentSongIndex === songs.length - 1}
-              >
-                <SkipNextIcon />
-              </IconButton>
+            <IconButton
+              aria-label="Shuffle"
+              color={shuffle ? "primary" : "default"}
+              onClick={() => setShuffle(!shuffle)}
+            >
+              <ShuffleIcon />
+            </IconButton>
 
-              <IconButton
-                aria-label="shuffle"
-                color={shuffle ? "primary" : "default"}
-                onClick={() => setShuffle((v) => !v)}
-              >
-                <ShuffleIcon />
-              </IconButton>
-
-              <IconButton
-                aria-label="repeat"
-                color={repeat ? "primary" : "default"}
-                onClick={() => setRepeat((v) => !v)}
-              >
-                <RepeatIcon />
-              </IconButton>
-            </Stack>
+            <IconButton
+              aria-label="Repeat"
+              color={repeat ? "primary" : "default"}
+              onClick={() => setRepeat(!repeat)}
+            >
+              <RepeatIcon />
+            </IconButton>
           </Stack>
 
-          {/* Progress bar and time below controls */}
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            mt={1}
-            sx={{ userSelect: "none" }}
+          <Box
+            sx={{
+              width: "100%",
+              height: 6,
+              bgcolor: "grey.300",
+              borderRadius: 1,
+              overflow: "hidden",
+              cursor: "pointer",
+            }}
+            onClick={(e) => {
+              const rect = (
+                e.currentTarget as HTMLElement
+              ).getBoundingClientRect();
+              const clickX = e.clientX - rect.left;
+              const newTime = (clickX / rect.width) * duration;
+              if (audioRef.current) {
+                audioRef.current.currentTime = newTime;
+              }
+              setProgress(newTime);
+            }}
+            aria-label="Audio progress bar"
+            role="slider"
+            aria-valuemin={0}
+            aria-valuemax={duration}
+            aria-valuenow={progress}
           >
-            {/* Elapsed time */}
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ minWidth: 36, textAlign: "right" }}
-            >
-              {formatTime(progress)}
-            </Typography>
-
-            {/* Progress bar container */}
             <Box
               sx={{
-                position: "relative",
-                height: 6,
-                bgcolor: "grey.300",
-                borderRadius: 3,
-                flexGrow: 1,
-                overflow: "hidden",
-                cursor: "pointer",
+                height: "100%",
+                width: `${(progress / duration) * 100}%`,
+                bgcolor: "primary.main",
+                transition: "width 0.2s linear",
               }}
-              onClick={(e) => {
-                const rect = (
-                  e.currentTarget as HTMLElement
-                ).getBoundingClientRect();
-                const clickPos = e.clientX - rect.left;
-                const ratio = Math.min(Math.max(clickPos / rect.width, 0), 1);
-                if (audioRef.current) {
-                  audioRef.current.currentTime = ratio * duration;
-                  setProgress(ratio * duration);
-                }
-              }}
-              aria-label="Audio progress bar"
-              role="slider"
-              aria-valuemin={0}
-              aria-valuemax={duration}
-              aria-valuenow={progress}
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (!audioRef.current) return;
-                const step = 5; // 5 seconds step
-                if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
-                  audioRef.current.currentTime = Math.max(
-                    audioRef.current.currentTime - step,
-                    0
-                  );
-                  setProgress(audioRef.current.currentTime);
-                  e.preventDefault();
-                } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
-                  audioRef.current.currentTime = Math.min(
-                    audioRef.current.currentTime + step,
-                    duration
-                  );
-                  setProgress(audioRef.current.currentTime);
-                  e.preventDefault();
-                }
-              }}
-            >
-              <Box
-                sx={{
-                  height: "100%",
-                  bgcolor: "primary.main",
-                  width: duration ? `${(progress / duration) * 100}%` : "0%",
-                  transition: "width 0.1s linear",
-                }}
-              />
-            </Box>
+            />
+          </Box>
 
-            {/* Total duration */}
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ minWidth: 36, textAlign: "left" }}
-            >
-              {formatTime(duration)}
-            </Typography>
-          </Stack>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 12,
+            }}
+            aria-live="polite"
+          >
+            <span>{formatTime(progress)}</span>
+            <span>{formatTime(duration)}</span>
+          </Box>
         </Box>
       )}
 
+      {/* Hidden audio element */}
       <audio
         ref={audioRef}
         src={
           currentSongIndex !== null
-            ? songs[currentSongIndex]?.audioUrl || undefined
-            : undefined
+            ? songs[currentSongIndex]?.audioUrl || ""
+            : ""
         }
-        preload="auto"
       />
     </Box>
   );

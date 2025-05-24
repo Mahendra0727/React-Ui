@@ -1,6 +1,21 @@
 import React, { useState } from "react";
-import { Box, Typography, IconButton, Paper } from "@mui/material";
+import {
+  Box,
+  Typography,
+  IconButton,
+  Paper,
+  Tooltip,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  ClickAwayListener,
+} from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import QueueMusicIcon from "@mui/icons-material/QueueMusic";
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import CloseIcon from "@mui/icons-material/Close";
 
 type Song = {
   audioUrl: string;
@@ -25,18 +40,28 @@ const formatTime = (time: number) => {
 
 const TrendingSongs: React.FC<Props> = ({ songs }) => {
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
+  const [showPanel, setShowPanel] = useState<boolean>(false);
+  const [selectedSong, setSelectedSong] = useState<Song | null>(null);
+
+  const handleMoreClick = (song: Song) => {
+    setSelectedSong(song);
+    setShowPanel(true);
+  };
+
+  const handleClosePanel = () => {
+    setShowPanel(false);
+    setSelectedSong(null);
+  };
 
   const chunkedSongs: Song[][] = [];
   for (let i = 0; i < songs.length; i += 3) {
     chunkedSongs.push(songs.slice(i, i + 3));
   }
 
-  const currentSong = currentIndex !== null ? songs[currentIndex] : null;
-
   return (
-    <Box>
+    <Box sx={{ position: "relative" }}>
       <Typography variant="h6" gutterBottom>
-        Treding Played Songs
+        Trending Played Songs
       </Typography>
 
       <Box
@@ -71,53 +96,34 @@ const TrendingSongs: React.FC<Props> = ({ songs }) => {
                   }}
                 >
                   {/* Left section: thumbnail + title + duration */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1.5,
-                      flex: 1,
-                    }}
-                  >
-                    {/* 16:9 Thumbnail */}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                     <Box
+                      component="img"
+                      src={song.thumbnail}
+                      alt={song.title}
                       sx={{
-                        width: 80,
-                        position: "relative",
-                        aspectRatio: "16 / 9",
-                        flexShrink: 0,
+                        width: 88,
+                        height: 50,
                         borderRadius: 1,
-                        overflow: "hidden",
-                        backgroundColor: "#ddd",
+                        objectFit: "cover",
+                        aspectRatio: "16 / 9",
                       }}
-                    >
-                      <Box
-                        component="img"
-                        src={song.thumbnail}
-                        alt={song.title}
-                        sx={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    </Box>
-
-                    {/* Title and duration */}
+                    />
                     <Box sx={{ minWidth: 0 }}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          whiteSpace: "normal",
-                          wordBreak: "break-word",
-                          fontWeight: 500,
-                        }}
-                      >
-                        {song.title}
-                      </Typography>
+                      <Tooltip title={song.title}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: "180px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {song.title}
+                        </Typography>
+                      </Tooltip>
                       <Typography variant="caption" color="text.secondary">
                         {formatTime(song.duration)}
                       </Typography>
@@ -125,7 +131,7 @@ const TrendingSongs: React.FC<Props> = ({ songs }) => {
                   </Box>
 
                   {/* Right section: More icon */}
-                  <IconButton>
+                  <IconButton onClick={() => handleMoreClick(song)}>
                     <MoreVertIcon />
                   </IconButton>
                 </Paper>
@@ -135,7 +141,65 @@ const TrendingSongs: React.FC<Props> = ({ songs }) => {
         ))}
       </Box>
 
-      {currentSong && <Box height={80} />}
+      {/* Small floating panel */}
+      {showPanel && (
+        <ClickAwayListener onClickAway={handleClosePanel}>
+          <Box
+            sx={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)", 
+              width: 300,
+              bgcolor: "#fff",
+              boxShadow: 5,
+              borderRadius: 2,
+              zIndex: 1300,
+              p: 2,
+            }}
+          >
+            {/* Header with close icon */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 1,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={600}>
+                Options
+              </Typography>
+              <IconButton size="small" onClick={handleClosePanel}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+
+            <List>
+              <ListItemButton>
+                <ListItemIcon>
+                  <PlayArrowIcon />
+                </ListItemIcon>
+                <ListItemText primary="Play Next" />
+              </ListItemButton>
+
+              <ListItemButton>
+                <ListItemIcon>
+                  <QueueMusicIcon />
+                </ListItemIcon>
+                <ListItemText primary="Add to Queue" />
+              </ListItemButton>
+
+              <ListItemButton>
+                <ListItemIcon>
+                  <PlaylistAddIcon />
+                </ListItemIcon>
+                <ListItemText primary="Add to Playlist" />
+              </ListItemButton>
+            </List>
+          </Box>
+        </ClickAwayListener>
+      )}
     </Box>
   );
 };

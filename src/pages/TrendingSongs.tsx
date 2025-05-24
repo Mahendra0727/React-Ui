@@ -71,15 +71,51 @@ const TrendingSongs: React.FC<Props> = ({ songs }) => {
                   }}
                 >
                   {/* Left section: thumbnail + title + duration */}
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      flex: 1,
+                    }}
+                  >
+                    {/* 16:9 Thumbnail */}
                     <Box
-                      component="img"
-                      src={song.thumbnail}
-                      alt={song.title}
-                      sx={{ width: 50, height: 50, borderRadius: 1 }}
-                    />
-                    <Box>
-                      <Typography variant="body2" noWrap>
+                      sx={{
+                        width: 80,
+                        position: "relative",
+                        aspectRatio: "16 / 9",
+                        flexShrink: 0,
+                        borderRadius: 1,
+                        overflow: "hidden",
+                        backgroundColor: "#ddd",
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={song.thumbnail}
+                        alt={song.title}
+                        sx={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </Box>
+
+                    {/* Title and duration */}
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          whiteSpace: "normal",
+                          wordBreak: "break-word",
+                          fontWeight: 500,
+                        }}
+                      >
                         {song.title}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">

@@ -216,13 +216,29 @@ const SongDrawer: React.FC<SongDrawerProps> = ({
 
       {/* Seek Bar */}
       <Box sx={{ px: 1 }}>
-        <Slider
-          min={0}
-          max={duration}
-          value={currentTime}
-          onChange={handleSeek}
-          sx={{ height: 6 }}
-        />
+        <Box sx={{ width: "100%", mt: 1 }}>
+          <Slider
+            min={0}
+            max={duration}
+            value={currentTime}
+            onChange={handleSeek}
+            aria-labelledby="audio-progress-slider"
+            sx={{
+              height: 6,
+              "& .MuiSlider-rail": {
+                height: 4,
+                borderRadius: 2,
+              },
+              "& .MuiSlider-track": {
+                height: 4,
+                borderRadius: 2,
+              },
+              "& .MuiSlider-thumb": {
+                display: "none",
+              },
+            }}
+          />
+        </Box>
         <Box
           sx={{
             display: "flex",

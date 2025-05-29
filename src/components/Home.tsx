@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Typography,
-  Paper,
-  InputBase,
-  IconButton,
-  useTheme,
-} from "@mui/material";
+import { Box, Paper, InputBase, IconButton, useTheme } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import axios from "axios";
 
 import MostPlayed from "../pages/MostPlayed";
-import TrendingSongs from "../pages/TrendingSongs"
-// import RecentlyPlayed from "../components/RecentlyPlayed";
+import TrendingSongs from "../pages/TrendingSongs";
+import SearchPlayedSongs from "../pages/SearchPlayed";
 
 const Home = () => {
   const theme = useTheme();
@@ -22,7 +15,6 @@ const Home = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [mostPlayed, setMostPlayed] = useState([]);
   const [trending, setTrending] = useState([]);
-  const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -48,7 +40,7 @@ const Home = () => {
         );
         setTrending(res.data?.trending_music || []);
       } catch (err) {
-        console.error("Failed to fetch most played songs:", err);
+        console.error("Failed to fetch trending songs:", err);
       }
     };
 
@@ -78,7 +70,8 @@ const Home = () => {
     <Box
       sx={{
         bgcolor: theme.palette.background.default,
-        minHeight: "100vh",
+        height: "100vh", // 👈 Fix for scrollable container
+        overflowY: "auto", // 👈 Enable scrolling
         p: 3,
       }}
     >
@@ -118,27 +111,24 @@ const Home = () => {
         </IconButton>
       </Paper>
 
-      {/* MostPlayed section centered like search bar */}
-      <Box
-        sx={{
-          maxWidth: 600,
-          width: "100%",
-          mx: "auto",
-          mt: 2,
-        }}
-      >
-        <MostPlayed songs={mostPlayed} />
-      </Box>
-      <Box
-        sx={{
-          maxWidth: 600,
-          width: "100%",
-          mx: "auto",
-          mt: 2,
-        }}
-      >
-        <TrendingSongs songs={trending} />
-      </Box>
+      {/* Conditional Sections */}
+      {searchResults.length > 0 && (
+        <Box sx={{ maxWidth: 600, width: "100%", mx: "auto", mt: 2 }}>
+          <SearchPlayedSongs songs={searchResults} />
+        </Box>
+      )}
+
+      {mostPlayed.length > 0 && (
+        <Box sx={{ maxWidth: 600, width: "100%", mx: "auto", mt: 2 }}>
+          <MostPlayed songs={mostPlayed} />
+        </Box>
+      )}
+
+      {trending.length > 0 && (
+        <Box sx={{ maxWidth: 600, width: "100%", mx: "auto", mt: 2 }}>
+          <TrendingSongs songs={trending} />
+        </Box>
+      )}
     </Box>
   );
 };

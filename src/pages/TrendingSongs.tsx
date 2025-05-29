@@ -33,6 +33,7 @@ import {
 } from "@mui/icons-material";
 
 import SongDrawer from "../components/SongPlayerDrawer";
+import axios from "axios";
 
 type Song = {
   audioUrl: string;
@@ -85,12 +86,36 @@ const TrendingSongs: React.FC<Props> = ({ songs }) => {
     };
   }, []);
 
-  const handlePlayClick = (song: Song, index: number) => {
-    setCurrentIndex(index);
-    setCurrentSong(song);
-    setIsPlaying(true);
-    setCurrentTime(0);
-    setShowPanel(false);
+  const handlePlayClick = async (song: Song, index: number) => {
+    try {
+      let updatedSong = song;
+
+      if (song.audioUrl === null) {
+        const res = await axios.get(
+          `https://music-lib-s8zi.onrender.com/get_audio?videoId=${song.videoId}`
+        );
+
+        console.log(res?.data, "res data");
+        if (res.data?.audioUrl) {
+          // Update song with the fetched audio URL
+          updatedSong = {
+            ...song,
+            audioUrl: res.data.audioUrl,
+          };
+        } else {
+          console.warn("No audio URL found for videoId:", song.videoId);
+          return;
+        }
+      }
+
+      setCurrentIndex(index);
+      setCurrentSong(updatedSong);
+      setIsPlaying(true);
+      setCurrentTime(0);
+      setShowPanel(false);
+    } catch (err) {
+      console.error("Failed to fetch audio URL:", err);
+    }
   };
 
   const handleSeek = (event: Event, newValue: number | number[]) => {

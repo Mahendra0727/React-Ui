@@ -88,29 +88,29 @@ const SearchPlayedSongs: React.FC<Props> = ({ songs }) => {
 
   const handlePlayClick = async (song: Song, index: number) => {
     try {
-      // let updatedSong = song;
+      let updatedSong = song;
 
-      // // If audioUrl is null, fetch it using the videoId
-      // if (!song.audioUrl) {
-      //   const res = await axios.get(
-      //     `https://music-lib-s8zi.onrender.com/get_audio?videoId=${song.videoId}`
-      //   );
+      if (song.audioUrl === null) {
+        const res = await axios.get(
+          `https://music-lib-s8zi.onrender.com/get_audio?videoId=${song.videoId}`
+        );
 
-      //   console.log(res.data, "res data");
-      //   if (res.data?.audio_url) {
-      //     // Update song with the fetched audio URL
-      //     updatedSong = {
-      //       ...song,
-      //       audioUrl: res.data.audio_url,
-      //     };
-      //   } else {
-      //     console.warn("No audio URL found for videoId:", song.videoId);
-      //     return;
-      //   }
-      // }
+        console.log(res?.data, "res data");
+        if (res.data?.audioUrl) {
+          // Update song with the fetched audio URL
+          updatedSong = {
+            ...song,
+            audioUrl: res.data.audioUrl,
+          };
+
+        } else {
+          console.warn("No audio URL found for videoId:", song.videoId);
+          return;
+        }
+      }
 
       setCurrentIndex(index);
-      setCurrentSong(song);
+      setCurrentSong(updatedSong);
       setIsPlaying(true);
       setCurrentTime(0);
       setShowPanel(false);
